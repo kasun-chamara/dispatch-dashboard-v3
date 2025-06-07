@@ -1,5 +1,5 @@
 import React from 'react';
-import OrderRequestsCard from '../components/orders/ordersCard';
+import OrderRequestsCard from '../components/orders/ordersRequestCard';
 import Map from '../components/dashboard/Map';
 import DriversTable from '../components/drivers/DriversTable';
 

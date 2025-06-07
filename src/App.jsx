@@ -3,8 +3,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import MainLayout from './components/common/MainLayout';
 import Dashboard from './pages/Dashboard';
-import Drivers from './pages/Drivers'; // <-- Import your Drivers page
-import './services/mockService'; // <-- This enables the mock API
+import Drivers from './pages/Drivers';
+import Deliveries from './pages/Deliveries';
+import './services/mockService';
 
 function App() {
   const [mode, setMode] = useState('light');
@@ -20,7 +21,8 @@ function App() {
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/drivers" element={<Drivers />} /> {/* Add this line */}
+            <Route path="/drivers" element={<Drivers />} />
+            <Route path="/deliveries" element={<Deliveries />} />
             {/* Add other routes here */}
           </Routes>
         </MainLayout>

@@ -381,13 +381,12 @@ const OrderRequestsCard = () => {
         setOrders(res.data);
         setLoading(false);
       });
-    }, 1500); // Simulate loading delay
+    }, 1500);
 
     return () => clearTimeout(timer);
   }, []);
 
   const handleAssign = (orderId, driverName) => {
-    // In a real app, you would call an API here
     console.log(`Order ${orderId} assigned to ${driverName}`);
   };
 
@@ -402,9 +401,9 @@ const OrderRequestsCard = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
       style={{
-        maxWidth: 380,
+        maxWidth: 352,
         width: '100%',
-        flex: '0 0 380px',
+        flex: '0 0 352px',
         height: 'calc(100vh - 40px)',
         maxHeight: 800,
         background: isDark
@@ -421,11 +420,10 @@ const OrderRequestsCard = () => {
     >
       <div style={{ marginBottom: 20 }}>
         <div style={{ 
-          display: '', 
+          display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'space-between',
-          marginBottom: 16,
-            border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.05)',
+          marginBottom: 16
         }}>
           <h3 style={{ 
             margin: 0, 
@@ -472,7 +470,7 @@ const OrderRequestsCard = () => {
                 borderColor: isDark ? '#4a6fca' : '#999'
               },
               backgroundColor: isDark ? 'rgba(11,36,71,0.7)' : '#fff',
-              borderRadius: 12,
+              borderRadius: 3,
               color: isDark ? '#fff' : '#222'
             }
           }}

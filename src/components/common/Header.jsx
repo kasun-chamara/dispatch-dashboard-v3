@@ -51,7 +51,7 @@ const Header = ({ onMenuClick, isMobile, mini, location, onToggleTheme }) => {
     <AppBar
       position="fixed"
       sx={{
-        backgroundColor: theme.palette.mode === 'dark' ? '#1e2026' : '#ffffff',
+        backgroundColor: theme.palette.mode === 'dark' ? '#1e2026' : '#f4f5f7',
         color: staticColors.text,
         zIndex: theme.zIndex.drawer + 1,
         boxShadow: 'none',

@@ -14,34 +14,67 @@ import {
   Chip,
   Avatar,
   Button,
-  IconButton
+  IconButton,
+  TextField,
+  InputAdornment,
+  Tooltip
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import SettingsIcon from '@mui/icons-material/Settings';
+import SearchIcon from '@mui/icons-material/Search';
+import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 
-const StatusPill = styled(Box)(({ theme, status }) => ({
+// StatusIndicator component
+const StatusIndicator = styled(Box)(({ theme, status }) => ({
+  width: 8,
+  height: 8,
+  borderRadius: '50%',
+  marginRight: 8,
+  backgroundColor: 
+    status === 'En Route' ? theme.palette.success.main :
+    status === 'Ready' ? theme.palette.warning.main :
+    theme.palette.text.secondary
+}));
+
+// StatusPill component with proper prop handling
+const StatusPill = styled(Box, {
+  shouldForwardProp: (prop) => prop !== 'status',
+})(({ theme, status }) => ({
   display: 'inline-flex',
   alignItems: 'center',
-  padding: '2px 8px',
+  padding: '4px 10px 4px 8px',
   borderRadius: '12px',
   fontSize: '0.7rem',
   fontWeight: 600,
-  width: '80px', // Fixed width for alignment
+  minWidth: '90px',
   justifyContent: 'center',
+  transition: 'all 0.2s ease',
   ...(status === 'En Route' && {
     backgroundColor: 'rgba(76, 175, 80, 0.1)',
     color: theme.palette.success.dark,
-    border: `1px solid ${theme.palette.success.main}`
+    border: `1px solid ${theme.palette.success.main}`,
+    '&:hover': {
+      backgroundColor: 'rgba(76, 175, 80, 0.2)'
+    }
   }),
   ...(status === 'Ready' && {
     backgroundColor: 'rgba(255, 193, 7, 0.1)',
     color: theme.palette.warning.dark,
-    border: `1px solid ${theme.palette.warning.main}`
+    border: `1px solid ${theme.palette.warning.main}`,
+    '&:hover': {
+      backgroundColor: 'rgba(255, 193, 7, 0.2)'
+    }
   }),
   ...(status === 'Offline' && {
     backgroundColor: 'rgba(158, 158, 158, 0.1)',
     color: theme.palette.text.secondary,
-    border: `1px solid ${theme.palette.text.secondary}`
+    border: `1px solid ${theme.palette.text.secondary}`,
+    '&:hover': {
+      backgroundColor: 'rgba(158, 158, 158, 0.2)'
+    }
   })
 }));
 
@@ -53,7 +86,7 @@ const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
   '& .MuiTableCell-root': {
     borderBottom: `1px solid ${theme.palette.divider}`,
     padding: '8px 12px',
-    height: '48px' // Reduced row height
+    height: '48px'
   }
 }));
 
@@ -71,27 +104,115 @@ const AssignButton = styled(Button)(({ theme }) => ({
   }
 }));
 
+const SearchField = styled(TextField)(({ theme }) => ({
+  '& .MuiOutlinedInput-root': {
+    borderRadius: '12px',
+    backgroundColor: theme.palette.background.paper,
+    '& fieldset': {
+      borderColor: theme.palette.divider,
+    },
+    '&:hover fieldset': {
+      borderColor: theme.palette.primary.light,
+    },
+    '&.Mui-focused fieldset': {
+      borderColor: theme.palette.primary.main,
+      borderWidth: '1px',
+    },
+  },
+  '& .MuiOutlinedInput-input': {
+    padding: '8px 12px',
+    fontSize: '0.875rem',
+    height: '36px',
+    boxSizing: 'border-box'
+  }
+}));
+
 const DriversTable = () => {
   const theme = useTheme();
   const [drivers, setDrivers] = useState([]);
+  const [filteredDrivers, setFilteredDrivers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchDrivers().then(res => {
       setDrivers(res.data);
+      setFilteredDrivers(res.data);
       setLoading(false);
     });
   }, []);
 
+  useEffect(() => {
+    if (searchTerm === '') {
+      setFilteredDrivers(drivers);
+    } else {
+      const filtered = drivers.filter(driver =>
+        driver.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        driver.id.toString().includes(searchTerm)
+      );
+      setFilteredDrivers(filtered);
+    }
+  }, [searchTerm, drivers]);
+
+  const getStatusIcon = (status) => {
+    switch(status) {
+      case 'En Route':
+        return <DirectionsCarIcon fontSize="small" sx={{ mr: 0.5 }} />;
+      case 'Ready':
+        return <CheckCircleIcon fontSize="small" sx={{ mr: 0.5 }} />;
+      case 'Offline':
+        return <PowerSettingsNewIcon fontSize="small" sx={{ mr: 0.5 }} />;
+      default:
+        return <AccessTimeIcon fontSize="small" sx={{ mr: 0.5 }} />;
+    }
+  };
+
+  const getStatusTooltip = (status) => {
+    switch(status) {
+      case 'En Route':
+        return 'Driver is currently on a delivery';
+      case 'Ready':
+        return 'Driver is available for assignments';
+      case 'Offline':
+        return 'Driver is not currently available';
+      default:
+        return 'Driver status unknown';
+    }
+  };
+
   return (
     <StyledTableContainer>
-      <Typography variant="subtitle1" sx={{ 
-        fontWeight: 600,
-        mb: 2,
-        fontSize: '1rem'
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        mb: 2
       }}>
-        Active Drivers
-      </Typography>
+        <Typography variant="subtitle1" sx={{ 
+          fontWeight: 600,
+          fontSize: '1rem'
+        }}>
+          Active Drivers
+        </Typography>
+        
+        <SearchField
+          placeholder="Search drivers..."
+          variant="outlined"
+          size="small"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon fontSize="small" />
+              </InputAdornment>
+            ),
+            sx: {
+              width: '250px'
+            }
+          }}
+        />
+      </Box>
 
       {loading ? (
         <Box display="flex" justifyContent="center" alignItems="center" minHeight={120}>
@@ -117,77 +238,114 @@ const DriversTable = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {drivers.map((driver) => (
-              <TableRow
-                key={driver.id}
-                hover
-                sx={{ 
-                  '&:last-child td': { borderBottom: 0 },
-                  '&:hover': {
-                    backgroundColor: theme.palette.action.hover
-                  }
-                }}
-              >
-                <TableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Avatar 
-                      src={driver.avatar} 
-                      alt={driver.name}
-                      sx={{ width: 32, height: 32, mr: 1.5 }}
-                    />
-                    <Box>
-                      <Typography variant="body2" fontWeight={500}>
-                        {driver.name}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        #{driver.id}
-                      </Typography>
+            {filteredDrivers.length > 0 ? (
+              filteredDrivers.map((driver) => (
+                <TableRow
+                  key={driver.id}
+                  hover
+                  sx={{ 
+                    '&:last-child td': { borderBottom: 0 },
+                    '&:hover': {
+                      backgroundColor: theme.palette.action.hover
+                    }
+                  }}
+                >
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Avatar 
+                        src={driver.avatar} 
+                        alt={driver.name}
+                        sx={{ 
+                          width: 36, 
+                          height: 36, 
+                          mr: 1.5,
+                          
+                        }}
+                      />
+                      <Box>
+                        <Typography variant="body2" fontWeight={500}>
+                          {driver.name}
+                        </Typography>
+                        <Typography variant="caption" color="textSecondary">
+                          #{driver.id} • {driver.vehicle}
+                        </Typography>
+                      </Box>
                     </Box>
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  <StatusPill status={driver.status}>
-                    {driver.status}
-                  </StatusPill>
-                </TableCell>
-                <TableCell align="center">
-                  <Chip 
-                    label={driver.activeOrders} 
-                    color="primary"
-                    variant="outlined"
-                    size="small"
-                    sx={{ 
-                      fontWeight: 500,
-                      fontSize: '0.7rem',
-                      height: '24px'
-                    }}
-                  />
-                </TableCell>
-                <TableCell align="center">
-                  <Typography variant="body2" fontWeight={500}>
-                    {driver.totalOrders}
+                  </TableCell>
+                  <TableCell>
+                    <Tooltip title={getStatusTooltip(driver.status)} arrow>
+                    <StatusPill status={driver.status}>
+                       {getStatusIcon(driver.status)}
+                       {driver.status}
+                    </StatusPill>
+                  </Tooltip>
+                  </TableCell>
+                  <TableCell align="center">
+                    <Chip 
+                      label={driver.activeOrders} 
+                      color="primary"
+                      variant="outlined"
+                      size="small"
+                      sx={{ 
+                        fontWeight: 500,
+                        fontSize: '0.7rem',
+                        height: '24px',
+                        borderColor: theme.palette.primary.light,
+                        backgroundColor: `${theme.palette.primary.light}08`
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell align="center">
+                    <Typography variant="body2" fontWeight={500}>
+                      {driver.totalOrders}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <AccessTimeIcon fontSize="small" color="disabled" />
+                      <Box>
+                        <Typography variant="body2" fontWeight={500}>
+                          {driver.shiftEnd}
+                        </Typography>
+                        <Typography variant="caption" color="textSecondary">
+                          {driver.shiftTimeRemaining}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </TableCell>
+                  <TableCell align="right">
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                      <AssignButton 
+                        size="small" 
+                        startIcon={<DirectionsCarIcon fontSize="small" />}
+                      >
+                        Assign
+                      </AssignButton>
+                      <IconButton 
+                        size="small" 
+                        aria-label="settings"
+                        sx={{
+                          border: `1px solid ${theme.palette.divider}`,
+                          '&:hover': {
+                            backgroundColor: theme.palette.action.hover
+                          }
+                        }}
+                      >
+                        <SettingsIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                  <Typography variant="body2" color="textSecondary">
+                    No drivers found matching your search
                   </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" fontWeight={500}>
-                    {driver.shiftEnd}
-                  </Typography>
-                  <Typography variant="caption" color="textSecondary">
-                    {driver.shiftTimeRemaining}
-                  </Typography>
-                </TableCell>
-                <TableCell align="right">
-                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                    <AssignButton size="small">
-                      Assign
-                    </AssignButton>
-                    <IconButton size="small" aria-label="settings">
-                      <SettingsIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
                 </TableCell>
               </TableRow>
-            ))}
+            )}
           </TableBody>
         </Table>
       )}
