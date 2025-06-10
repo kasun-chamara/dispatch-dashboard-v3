@@ -5,6 +5,7 @@ import MainLayout from './components/common/MainLayout';
 import Dashboard from './pages/Dashboard';
 import Drivers from './pages/Drivers';
 import Deliveries from './pages/Deliveries';
+import Orders from './pages/Orders'; 
 import './services/mockService';
 
 function App() {
@@ -23,7 +24,8 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/drivers" element={<Drivers />} />
             <Route path="/deliveries" element={<Deliveries />} />
-            {/* Add other routes here */}
+            <Route path="/orders" element={<Orders />} /> 
+          
           </Routes>
         </MainLayout>
       </Router>
