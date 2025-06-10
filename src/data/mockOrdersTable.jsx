@@ -28,7 +28,7 @@ const ordersTableData = [
   },
   {
     orderId: "ORD-1004",
-    status: "Delivered",
+    status: "En Route",
     customer: "Emma Wilson",
     noOfItems: 1,
     payment: "Cash",
@@ -37,7 +37,7 @@ const ordersTableData = [
   },
   {
     orderId: "ORD-1005",
-    status: "Pending",
+    status: "Ready",
     customer: "Michael Brown",
     noOfItems: 5,
     payment: "Card",
@@ -46,7 +46,7 @@ const ordersTableData = [
   },
   {
     orderId: "ORD-1006",
-    status: "Cancelled",
+    status: "En Route",
     customer: "Sophia Davis",
     noOfItems: 2,
     payment: "Cash",
@@ -73,7 +73,7 @@ const ordersTableData = [
   },
   {
     orderId: "ORD-1009",
-    status: "Delivered",
+    status: "Ready",
     customer: "Liam Hernandez",
     noOfItems: 4,
     payment: "Cash",
@@ -82,7 +82,7 @@ const ordersTableData = [
   },
   {
     orderId: "ORD-1010",
-    status: "Pending",
+    status: "En Route",
     customer: "Emily Clark",
     noOfItems: 2,
     payment: "Card",
