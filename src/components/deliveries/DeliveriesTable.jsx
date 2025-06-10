@@ -13,57 +13,57 @@ import {
   Box,
   Chip,
   Avatar,
-  Button,
-  IconButton,
   TextField,
-  InputAdornment
+  InputAdornment,
+  Tooltip
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import SearchIcon from '@mui/icons-material/Search';
-import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import PaymentIcon from '@mui/icons-material/Payment';
+import CancelIcon from '@mui/icons-material/Cancel';
 
-const StatusPill = styled(Box)(({ theme, status }) => ({
+// StatusPill component with consistent styling to OrdersTable
+
+// StatusPill component with proper prop handling
+const StatusPill = styled(Box, {
+  shouldForwardProp: (prop) => prop !== 'status',
+})(({ theme, status }) => ({
   display: 'inline-flex',
   alignItems: 'center',
-  padding: '4px 12px',
+  padding: '4px 10px 4px 8px',
   borderRadius: '12px',
-  fontSize: '0.75rem',
+  fontSize: '0.7rem',
   fontWeight: 600,
-  width: '100px',
+  minWidth: '90px',
   justifyContent: 'center',
-  ...(status === 'Delivered' && {
-    backgroundColor: 'rgba(82, 196, 26, 0.1)',
+  transition: 'all 0.2s ease',
+  ...(status === 'En Route' && {
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
     color: theme.palette.success.dark,
-    border: `1px solid ${theme.palette.success.main}`
+    border: `1px solid ${theme.palette.success.main}`,
+    '&:hover': {
+      backgroundColor: 'rgba(76, 175, 80, 0.2)'
+    }
   }),
-  ...(status === 'Pending' && {
-    backgroundColor: 'rgba(255, 197, 7, 0.1)',
+  ...(status === 'Ready' && {
+    backgroundColor: 'rgba(255, 193, 7, 0.1)',
     color: theme.palette.warning.dark,
-    border: `1px solid ${theme.palette.warning.main}`
-  }),
-  ...(status === 'Cancelled' && {
-    backgroundColor: 'rgba(255, 86, 48, 0.1)',
-    color: theme.palette.error.dark,
-    border: `1px solid ${theme.palette.error.main}`
-  }),
-  ...(status === 'In Progress' && {
-    backgroundColor: 'rgba(24, 144, 255, 0.1)',
-    color: theme.palette.info.dark,
-    border: `1px solid ${theme.palette.info.main}`
+    border: `1px solid ${theme.palette.warning.main}`,
+    '&:hover': {
+      backgroundColor: 'rgba(255, 193, 7, 0.2)'
+    }
   })
 }));
 
+// Keep the same styled components as in OrdersTable for consistency
 const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
   background: theme.palette.background.paper,
   borderRadius: '12px',
   padding: '16px',
   border: `1px solid ${theme.palette.divider}`,
-  boxShadow: theme.palette.mode === 'dark' 
-    ? '0 4px 32px 0 rgba(11,36,71,0.25)' 
-    : '0 4px 32px 0 rgba(0,0,0,0.08)',
   '& .MuiTableCell-root': {
     borderBottom: `1px solid ${theme.palette.divider}`,
     padding: '12px 16px',
@@ -87,12 +87,37 @@ const SearchField = styled(TextField)(({ theme }) => ({
     },
   },
   '& .MuiOutlinedInput-input': {
-    padding: '10px 14px',
+    padding: '8px 12px',
     fontSize: '0.875rem',
-    height: '40px',
+    height: '36px',
     boxSizing: 'border-box'
   }
 }));
+
+// Enhanced status icons with consistent sizing
+const getStatusIcon = (status) => {
+  switch(status) {
+    case 'En Route':
+      return <DirectionsCarIcon fontSize="small" sx={{ mr: 0.5 }} />;
+    case 'Ready':
+      return <CheckCircleIcon fontSize="small" sx={{ mr: 0.5 }} />;
+    default:
+      return <AccessTimeIcon fontSize="small" sx={{ mr: 0.5 }} />;
+  }
+};
+
+
+// Enhanced tooltips with more descriptive text
+const getStatusTooltip = (status) => {
+  switch(status) {
+    case 'En Route':
+      return 'Order is currently being delivered';
+    case 'Ready':
+      return 'Order is ready for pickup';
+    default:
+      return 'Order status unknown';
+  }
+};
 
 const DeliveriesTable = () => {
   const theme = useTheme();
@@ -116,7 +141,8 @@ const DeliveriesTable = () => {
       const filtered = deliveries.filter(delivery =>
         delivery.driverName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         delivery.orderId.toString().includes(searchTerm) ||
-        delivery.payment.toLowerCase().includes(searchTerm.toLowerCase())
+        delivery.payment.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        delivery.status.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setFilteredDeliveries(filtered);
     }
@@ -133,12 +159,9 @@ const DeliveriesTable = () => {
         <Typography variant="subtitle1" sx={{ 
           fontWeight: 600,
           fontSize: '1rem',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1
+          color: theme.palette.text.primary
         }}>
-        
-          Deliveries
+          Recent Deliveries
         </Typography>
         
         <SearchField
@@ -154,14 +177,14 @@ const DeliveriesTable = () => {
               </InputAdornment>
             ),
             sx: {
-              width: '280px'
+              width: '250px'
             }
           }}
         />
       </Box>
 
       {loading ? (
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight={120}>
           <CircularProgress size={24} />
         </Box>
       ) : (
@@ -172,7 +195,8 @@ const DeliveriesTable = () => {
                 fontWeight: 600,
                 color: theme.palette.text.secondary,
                 fontSize: '0.75rem',
-                padding: '12px 16px'
+                padding: '12px 16px',
+                backgroundColor: theme.palette.background.default
               }
             }}>
               <TableCell>Driver</TableCell>
@@ -198,16 +222,17 @@ const DeliveriesTable = () => {
                   }}
                 >
                   <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                       <Avatar 
                         sx={{ 
                           width: 36, 
                           height: 36, 
                           bgcolor: theme.palette.primary.main,
-                          fontSize: 14
+                          fontSize: 14,
+                          fontWeight: 500
                         }}
                       >
-                        {delivery.driverName.charAt(0)}
+                        {delivery.driverName.charAt(0).toUpperCase()}
                       </Avatar>
                       <Box>
                         <Typography variant="body2" fontWeight={500}>
@@ -220,18 +245,12 @@ const DeliveriesTable = () => {
                     </Box>
                   </TableCell>
                   <TableCell align="center">
-                    <StatusPill status={delivery.status}>
-                      {delivery.status === 'Delivered' && (
-                        <CheckCircleIcon fontSize="small" sx={{ mr: 0.5 }} />
-                      )}
-                      {delivery.status === 'Pending' && (
-                        <AccessTimeIcon fontSize="small" sx={{ mr: 0.5 }} />
-                      )}
-                      {delivery.status === 'In Progress' && (
-                        <LocalShippingIcon fontSize="small" sx={{ mr: 0.5 }} />
-                      )}
-                      {delivery.status}
-                    </StatusPill>
+                    <Tooltip title={getStatusTooltip(delivery.status)} arrow>
+                      <StatusPill status={delivery.status}>
+                        {getStatusIcon(delivery.status)}
+                        {delivery.status}
+                      </StatusPill>
+                    </Tooltip>
                   </TableCell>
                   <TableCell align="center">
                     <Chip 
@@ -241,8 +260,10 @@ const DeliveriesTable = () => {
                       size="small"
                       sx={{ 
                         fontWeight: 500,
-                        fontSize: '0.75rem',
-                        height: '24px'
+                        fontSize: '0.7rem',
+                        height: '24px',
+                        borderColor: theme.palette.primary.light,
+                        backgroundColor: `${theme.palette.primary.light}08`
                       }}
                     />
                   </TableCell>
@@ -252,11 +273,23 @@ const DeliveriesTable = () => {
                     </Typography>
                   </TableCell>
                   <TableCell align="center">
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                      <PaymentIcon fontSize="small" color={
-                        delivery.payment === 'Paid' ? 'success' : 
-                        delivery.payment === 'Pending' ? 'warning' : 'error'
-                      } />
+                    <Box sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      gap: 0.5 
+                    }}>
+                      <PaymentIcon 
+                        fontSize="small" 
+                        sx={{
+                          color: delivery.payment === 'Paid' ? 
+                            theme.palette.success.main : 
+                            delivery.payment === 'Pending' ? 
+                            theme.palette.warning.main : 
+                            theme.palette.error.main,
+                          fontSize: '18px'
+                        }} 
+                      />
                       <Typography variant="body2" fontWeight={500}>
                         {delivery.payment}
                       </Typography>

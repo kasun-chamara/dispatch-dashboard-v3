@@ -18,8 +18,9 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import SearchIcon from '@mui/icons-material/Search';
+import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import PendingIcon from '@mui/icons-material/Pending';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
 
 // StatusPill component with proper prop handling
 const StatusPill = styled(Box, {
@@ -34,20 +35,20 @@ const StatusPill = styled(Box, {
   minWidth: '90px',
   justifyContent: 'center',
   transition: 'all 0.2s ease',
-  ...(status === 'Delivered' && {
-    backgroundColor: 'rgba(82, 196, 26, 0.1)',
+  ...(status === 'En Route' && {
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
     color: theme.palette.success.dark,
     border: `1px solid ${theme.palette.success.main}`,
     '&:hover': {
-      backgroundColor: 'rgba(82, 196, 26, 0.2)'
+      backgroundColor: 'rgba(76, 175, 80, 0.2)'
     }
   }),
-  ...(status === 'Pending' && {
-    backgroundColor: 'rgba(255, 197, 7, 0.1)',
+  ...(status === 'Ready' && {
+    backgroundColor: 'rgba(255, 193, 7, 0.1)',
     color: theme.palette.warning.dark,
     border: `1px solid ${theme.palette.warning.main}`,
     '&:hover': {
-      backgroundColor: 'rgba(255, 197, 7, 0.2)'
+      backgroundColor: 'rgba(255, 193, 7, 0.2)'
     }
   })
 }));
@@ -89,21 +90,21 @@ const SearchField = styled(TextField)(({ theme }) => ({
 
 const getStatusIcon = (status) => {
   switch(status) {
-    case 'Delivered':
+    case 'En Route':
+      return <DirectionsCarIcon fontSize="small" sx={{ mr: 0.5 }} />;
+    case 'Ready':
       return <CheckCircleIcon fontSize="small" sx={{ mr: 0.5 }} />;
-    case 'Pending':
-      return <PendingIcon fontSize="small" sx={{ mr: 0.5 }} />;
     default:
-      return null;
+      return <AccessTimeIcon fontSize="small" sx={{ mr: 0.5 }} />;
   }
 };
 
 const getStatusTooltip = (status) => {
   switch(status) {
-    case 'Delivered':
-      return 'Order has been delivered successfully';
-    case 'Pending':
-      return 'Order is being processed';
+    case 'En Route':
+      return 'Order is currently being delivered';
+    case 'Ready':
+      return 'Order is ready for pickup';
     default:
       return 'Order status unknown';
   }
