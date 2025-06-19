@@ -26,20 +26,22 @@ import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
+import ViewCompactIcon from '@mui/icons-material/ViewCompact';
+import WidthFullIcon from '@mui/icons-material/WidthFull';
 
-// StatusIndicator component
+// Status indicator
 const StatusIndicator = styled(Box)(({ theme, status }) => ({
   width: 8,
   height: 8,
   borderRadius: '50%',
   marginRight: 8,
-  backgroundColor: 
+  backgroundColor:
     status === 'En Route' ? theme.palette.success.main :
     status === 'Ready' ? theme.palette.warning.main :
     theme.palette.text.secondary
 }));
 
-// StatusPill component with proper prop handling
+// StatusPill
 const StatusPill = styled(Box, {
   shouldForwardProp: (prop) => prop !== 'status',
 })(({ theme, status }) => ({
@@ -73,16 +75,22 @@ const StatusPill = styled(Box, {
     color: theme.palette.text.secondary,
     border: `1px solid ${theme.palette.text.secondary}`,
     '&:hover': {
-      backgroundColor: 'rgba(158, 158, 158, 0.2)'
+   
     }
   })
 }));
 
-const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
+// Container Styling
+const StyledTableContainer = styled(TableContainer, {
+  shouldForwardProp: (prop) => prop !== 'shrinked',
+})(({ theme, shrinked }) => ({
   background: theme.palette.background.paper,
   borderRadius: '12px',
   padding: '16px',
   border: `1px solid ${theme.palette.divider}`,
+  maxWidth: shrinked ? '720px' : '100%',
+  marginLeft: shrinked ? 'auto' : '0',
+  transition: 'all 0.3s ease',
   '& .MuiTableCell-root': {
     borderBottom: `1px solid ${theme.palette.divider}`,
     padding: '8px 12px',
@@ -133,6 +141,7 @@ const DriversTable = () => {
   const [filteredDrivers, setFilteredDrivers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [shrinked, setShrinked] = useState(false);
 
   useEffect(() => {
     fetchDrivers().then(res => {
@@ -156,62 +165,59 @@ const DriversTable = () => {
 
   const getStatusIcon = (status) => {
     switch(status) {
-      case 'En Route':
-        return <DirectionsCarIcon fontSize="small" sx={{ mr: 0.5 }} />;
-      case 'Ready':
-        return <CheckCircleIcon fontSize="small" sx={{ mr: 0.5 }} />;
-      case 'Offline':
-        return <PowerSettingsNewIcon fontSize="small" sx={{ mr: 0.5 }} />;
-      default:
-        return <AccessTimeIcon fontSize="small" sx={{ mr: 0.5 }} />;
+      case 'En Route': return <DirectionsCarIcon fontSize="small" sx={{ mr: 0.5 }} />;
+      case 'Ready': return <CheckCircleIcon fontSize="small" sx={{ mr: 0.5 }} />;
+      case 'Offline': return <PowerSettingsNewIcon fontSize="small" sx={{ mr: 0.5 }} />;
+      default: return <AccessTimeIcon fontSize="small" sx={{ mr: 0.5 }} />;
     }
   };
 
   const getStatusTooltip = (status) => {
     switch(status) {
-      case 'En Route':
-        return 'Driver is currently on a delivery';
-      case 'Ready':
-        return 'Driver is available for assignments';
-      case 'Offline':
-        return 'Driver is not currently available';
-      default:
-        return 'Driver status unknown';
+      case 'En Route': return 'Driver is currently on a delivery';
+      case 'Ready': return 'Driver is available for assignments';
+      case 'Offline': return 'Driver is not currently available';
+      default: return 'Driver status unknown';
     }
   };
 
   return (
-    <StyledTableContainer>
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        mb: 2
-      }}>
-        <Typography variant="subtitle1" sx={{ 
-          fontWeight: 600,
-          fontSize: '1rem'
-        }}>
+    <StyledTableContainer shrinked={shrinked}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: '1rem' }}>
           Active Drivers
         </Typography>
-        
-        <SearchField
-          placeholder="Search drivers..."
-          variant="outlined"
-          size="small"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
-              </InputAdornment>
-            ),
-            sx: {
-              width: '250px'
-            }
-          }}
-        />
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <SearchField
+            placeholder="Search drivers..."
+            variant="outlined"
+            size="small"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
+              sx: { width: '250px' }
+            }}
+          />
+
+          <Tooltip title={shrinked ? 'Expand Table Width' : 'Shrink Table Width'}>
+            <IconButton
+              onClick={() => setShrinked(prev => !prev)}
+              size="small"
+              sx={{
+                border: `1px solid ${theme.palette.divider}`,
+                ml: 1
+              }}
+            >
+              {shrinked ? <WidthFullIcon fontSize="small" /> : <ViewCompactIcon fontSize="small" />}
+            </IconButton>
+          </Tooltip>
+        </Box>
       </Box>
 
       {loading ? (
@@ -221,7 +227,7 @@ const DriversTable = () => {
       ) : (
         <Table size="small">
           <TableHead>
-            <TableRow sx={{ 
+            <TableRow sx={{
               '& th': {
                 fontWeight: 600,
                 color: theme.palette.text.secondary,
@@ -240,28 +246,13 @@ const DriversTable = () => {
           <TableBody>
             {filteredDrivers.length > 0 ? (
               filteredDrivers.map((driver) => (
-                <TableRow
-                  key={driver.id}
-                  hover
-                  sx={{ 
-                    '&:last-child td': { borderBottom: 0 },
-                    '&:hover': {
-                      backgroundColor: theme.palette.action.hover
-                    }
-                  }}
-                >
+                <TableRow key={driver.id} hover sx={{
+                  '&:last-child td': { borderBottom: 0 },
+                  '&:hover': { backgroundColor: theme.palette.action.hover }
+                }}>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Avatar 
-                        src={driver.avatar} 
-                        alt={driver.name}
-                        sx={{ 
-                          width: 36, 
-                          height: 36, 
-                          mr: 1.5,
-                          
-                        }}
-                      />
+                      <Avatar src={driver.avatar} alt={driver.name} sx={{ width: 36, height: 36, mr: 1.5 }} />
                       <Box>
                         <Typography variant="body2" fontWeight={500}>
                           {driver.name}
@@ -274,11 +265,11 @@ const DriversTable = () => {
                   </TableCell>
                   <TableCell>
                     <Tooltip title={getStatusTooltip(driver.status)} arrow>
-                    <StatusPill status={driver.status}>
-                       {getStatusIcon(driver.status)}
-                       {driver.status}
-                    </StatusPill>
-                  </Tooltip>
+                      <StatusPill status={driver.status}>
+                        {getStatusIcon(driver.status)}
+                        {driver.status}
+                      </StatusPill>
+                    </Tooltip>
                   </TableCell>
                   <TableCell align="center">
                     <Chip 
@@ -286,7 +277,7 @@ const DriversTable = () => {
                       color="primary"
                       variant="outlined"
                       size="small"
-                      sx={{ 
+                      sx={{
                         fontWeight: 500,
                         fontSize: '0.7rem',
                         height: '24px',
@@ -321,8 +312,8 @@ const DriversTable = () => {
                       >
                         Assign
                       </AssignButton>
-                      <IconButton 
-                        size="small" 
+                      <IconButton
+                        size="small"
                         aria-label="settings"
                         sx={{
                           border: `1px solid ${theme.palette.divider}`,

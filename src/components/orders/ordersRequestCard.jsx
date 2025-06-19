@@ -58,7 +58,7 @@ const OrderCard = ({ order, isDark, onAssign }) => {
     }, 1500);
   };
 
-  // Extract order data from the structure
+
   const orderData = order.text || order;
   const customer = orderData.customer || {};
   const deliveryAddress = orderData.deliveryAddress || {};
@@ -575,16 +575,16 @@ const OrderRequestsCard = () => {
         let order = message.data;
         console.log("Received order update:", order);
 
-        // Handle different message formats
+       
         if (typeof order === "string") {
           try {
-            order = JSON.parse(order); // Correct
+            order = JSON.parse(order); 
           } catch (e) {
             console.error("Failed to parse order string:", e);
             return;
           }
         }
-        // Ensure we have the order object
+    
         if (!order) return;
 
         setOrders((prevOrders) => {
@@ -630,7 +630,7 @@ const OrderRequestsCard = () => {
   }, []);
   const handleAssign = (orderId, driverName) => {
     console.log(`Order ${orderId} assigned to ${driverName}`);
-    // Here you would typically make an API call to update the order status
+    
   };
 
   const filteredOrders = orders.filter((order) => {

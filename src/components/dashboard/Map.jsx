@@ -48,7 +48,7 @@ const Map = ({ center = [55.005516859567955, -2.7079445264293915], zoom = 13, ma
     <Box
       sx={{
         width: '100%',
-        height: 500,
+        height: '100%',
         borderRadius: '12px',
         overflow: 'hidden',
         border: `1px solid ${theme.palette.divider}`,
