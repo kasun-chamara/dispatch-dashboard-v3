@@ -45,7 +45,7 @@ const OrderCard = ({ order, isDark, onAssign }) => {
   const [selectedDriver, setSelectedDriver] = useState("");
   const [isAssigning, setIsAssigning] = useState(false);
   const [assigned, setAssigned] = useState(false);
-  console.log("OrderCard rendered with order:", order);
+  
   const handleAssign = () => {
     if (!selectedDriver) return;
 
@@ -553,18 +553,26 @@ const OrderRequestsCard = () => {
   useEffect(() => {
     // 1. Fetch initial orders from REST API
     fetch(
-      "http://localhost:3000/v1/orders/location/36726661/list?page=1&limit=10"
+      "http://13.41.192.8:3000/v1/orders/location/36726661/list?page=1&limit=10"
     )
       .then((res) => res.json())
       .then((data) => {
         const ordersArray = Array.isArray(data.data) ? data.data : [];
         setOrders(ordersArray);
+        console.log("Initial orders fetched:", orders);
         setLoading(false);
       })
       .catch((err) => {
         console.error("Failed to fetch orders:", err);
         setLoading(false);
       });
+  const driverChannel = ablyClient.channels.get(`driver-36726661`);
+    const logDriverMessage = (message) => {
+      console.log('Driver channel message:', message);
+    };
+    driverChannel.subscribe(logDriverMessage);
+
+
 
     // 2. Subscribe to Ably for real-time updates
     const channel = ablyClient.channels.get("order-36726661");

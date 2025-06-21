@@ -94,6 +94,8 @@ const getStatusIcon = (status) => {
       return <DirectionsCarIcon fontSize="small" sx={{ mr: 0.5 }} />;
     case "Ready":
       return <CheckCircleIcon fontSize="small" sx={{ mr: 0.5 }} />;
+    case "DELIVERED":
+      return <CheckCircleIcon fontSize="small" sx={{ mr: 0.5, color: "green" }} />;
     default:
       return <AccessTimeIcon fontSize="small" sx={{ mr: 0.5 }} />;
   }
@@ -105,6 +107,8 @@ const getStatusTooltip = (status) => {
       return "Order is currently being delivered";
     case "Ready":
       return "Order is ready for pickup";
+    case "DELIVERED":
+      return "Order has been delivered";
     default:
       return "Order status unknown";
   }
@@ -117,79 +121,86 @@ const OrdersTable = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
-  useEffect(() => {
-    fetch("http://localhost:3000/v1/orders/location/36726661/list?page=1&limit=10")
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("Fetched Orders Data:", data);
-        const transformed = data.data.map((o) => ({
-          orderId: o.orderNumber,
-          customer: o.customer?.name || "N/A",
-          status: "Ready", // JSON has no status, default used
-          noOfItems: o.orderItems?.length ?? 0,
-          payment: o.paymentMethod || "Unknown",
-          amount: o.costing?.totalCost || 0, // Extracting totalCost from costing object
-          date: new Date(o.placementTime).toLocaleDateString(),
-        }));
-        setOrders(transformed);
-        setFilteredOrders(transformed);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Fetch error:", err);
-        setLoading(false);
-      });
+useEffect(() => {
+  // 1. Fetch initial orders
+  fetch("http://13.41.192.8:3000/v1/orders/location/36726661/list?page=1&limit=10")
+    .then((res) => res.json())
+    .then((data) => {
+      const transformed = data.data.map((o) => ({
+        orderId: o.orderId,           // Use actual orderId instead of orderNumber
+        orderNumber: o.orderNumber,   // Keep orderNumber as separate field
+        customer: o.customer?.name || "N/A",
+        status: o.orderStatus,
+        noOfItems: o.orderItems?.length ?? 0,
+        payment: o.paymentMethod || "Unknown",
+        amount: o.costing?.totalCost || 0,
+        date: new Date(o.placementTime).toLocaleDateString(),
+      }));
+      setOrders(transformed);
+      setFilteredOrders(transformed);
+      setLoading(false);
+    })
+    .catch((err) => {
+      console.error("Fetch error:", err);
+      setLoading(false);
+    });
 
-    const channel = ablyClient.channels.get("order-36726661");
-    const handleUpdate = (message) => {
-      let order = message.data.text;
-      if (typeof order === "string") {
-        try {
-          order = JSON.parse(order);
-        } catch (e) {
-          console.error("Parse error:", e);
-          return;
-        }
-      }
-
-      const transformedOrder = {
-        orderId: order.orderNumber,
-        customer: order.customer?.name || "N/A",
-        status: "Ready",
-        noOfItems: order.orderItems?.length ?? 0,
-        payment: order.paymentMethod || "Unknown",
-        amount: order.costing?.totalCost || 0, // Extracting totalCost from costing object
-        date: new Date(order.placementTime).toLocaleDateString(),
-      };
-
-      setOrders((prev) => {
-        const index = prev.findIndex((o) => o.orderId === transformedOrder.orderId);
-        if (index !== -1) {
-          const updated = [...prev];
-          updated[index] = transformedOrder;
-          return updated;
-        } else {
-          return [...prev, transformedOrder];
-        }
-      });
-    };
-
-    channel.subscribe(handleUpdate);
-    return () => channel.unsubscribe(handleUpdate);
-  }, []);
-
-  useEffect(() => {
-    if (searchTerm === "") {
-      setFilteredOrders(orders);
-    } else {
-      const filtered = orders.filter(
-        (order) =>
-          order.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          order.customer.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredOrders(filtered);
+  // 2. Ably real-time subscription
+  const channel = ablyClient.channels.get("order-36726661");
+  
+  const handleUpdate = (message) => {
+    console.log("Ably message received:", message);
+    const raw = message?.data?.message;
+    
+    if (!raw || !raw.orderId) {
+      console.warn("Invalid update format");
+      return;
     }
-  }, [searchTerm, orders]);
+
+    const updatedOrderId = raw.orderId;
+    const updatedStatus = raw.orderStatus;
+
+    console.log("Updating order:", updatedOrderId, "to status:", updatedStatus);
+
+    // Update state immutably
+    setOrders((prev) => {
+      const updated = prev.map((o) =>
+        o.orderId === updatedOrderId ? { ...o, status: updatedStatus } : o
+      );
+      console.log("Orders updated:", updated);
+      return updated;
+    });
+
+    setFilteredOrders((prev) => {
+      const updated = prev.map((o) =>
+        o.orderId === updatedOrderId ? { ...o, status: updatedStatus } : o
+      );
+      console.log("Filtered orders updated:", updated);
+      return updated;
+    });
+  };
+
+  channel.subscribe("ORDER_STATUS_UPDATED", handleUpdate);
+
+  // Cleanup
+  return () => {
+    channel.unsubscribe("ORDER_STATUS_UPDATED", handleUpdate);
+  };
+}, []);
+
+useEffect(() => {
+  if (searchTerm === "") {
+    setFilteredOrders(orders);
+  } else {
+    const filtered = orders.filter(
+      (order) =>
+        order.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) || // Also search by orderNumber
+        order.customer.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredOrders(filtered);
+  }
+}, [searchTerm, orders]);
 
   return (
     <StyledTableContainer>
@@ -229,7 +240,7 @@ const OrdersTable = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>ORDER ID</TableCell>
+              <TableCell>ORDER Number</TableCell>
               <TableCell align="center">STATUS</TableCell>
               <TableCell>CUSTOMER</TableCell>
               <TableCell align="center">ITEMS</TableCell>
@@ -242,13 +253,13 @@ const OrdersTable = () => {
             {filteredOrders.length > 0 ? (
               filteredOrders.map((order) => (
                 <TableRow
-                  key={order.orderId}
+                  key={order.id}
                   hover
                   sx={{ "&:hover": { backgroundColor: theme.palette.action.hover } }}
                 >
                   <TableCell>
                     <Typography variant="body2" fontWeight={500}>
-                      {order.orderId}
+                      {order.orderNumber}
                     </Typography>
                   </TableCell>
                   <TableCell align="center">
