@@ -2,22 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { fetchDrivers } from '../../api/drivers';
 import { useTheme } from '@mui/material/styles';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Typography,
-  CircularProgress,
-  Box,
-  Chip,
-  Avatar,
-  Button,
-  IconButton,
-  TextField,
-  InputAdornment,
-  Tooltip
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  Typography, CircularProgress, Box, Chip, Avatar, Button, IconButton,
+  TextField, InputAdornment, Tooltip
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -26,22 +13,8 @@ import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
-import ViewCompactIcon from '@mui/icons-material/ViewCompact';
-import WidthFullIcon from '@mui/icons-material/WidthFull';
+import DriverUpdate from './DriverUpdate'; // ✅ Make sure the path is correct
 
-// Status indicator
-const StatusIndicator = styled(Box)(({ theme, status }) => ({
-  width: 8,
-  height: 8,
-  borderRadius: '50%',
-  marginRight: 8,
-  backgroundColor:
-    status === 'En Route' ? theme.palette.success.main :
-    status === 'Ready' ? theme.palette.warning.main :
-    theme.palette.text.secondary
-}));
-
-// StatusPill
 const StatusPill = styled(Box, {
   shouldForwardProp: (prop) => prop !== 'status',
 })(({ theme, status }) => ({
@@ -57,40 +30,25 @@ const StatusPill = styled(Box, {
   ...(status === 'En Route' && {
     backgroundColor: 'rgba(76, 175, 80, 0.1)',
     color: theme.palette.success.dark,
-    border: `1px solid ${theme.palette.success.main}`,
-    '&:hover': {
-      backgroundColor: 'rgba(76, 175, 80, 0.2)'
-    }
+    border: `1px solid ${theme.palette.success.main}`
   }),
   ...(status === 'Ready' && {
     backgroundColor: 'rgba(255, 193, 7, 0.1)',
     color: theme.palette.warning.dark,
-    border: `1px solid ${theme.palette.warning.main}`,
-    '&:hover': {
-      backgroundColor: 'rgba(255, 193, 7, 0.2)'
-    }
+    border: `1px solid ${theme.palette.warning.main}`
   }),
   ...(status === 'Offline' && {
     backgroundColor: 'rgba(158, 158, 158, 0.1)',
     color: theme.palette.text.secondary,
-    border: `1px solid ${theme.palette.text.secondary}`,
-    '&:hover': {
-   
-    }
+    border: `1px solid ${theme.palette.text.secondary}`
   })
 }));
 
-// Container Styling
-const StyledTableContainer = styled(TableContainer, {
-  shouldForwardProp: (prop) => prop !== 'shrinked',
-})(({ theme, shrinked }) => ({
+const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
   background: theme.palette.background.paper,
   borderRadius: '12px',
   padding: '16px',
   border: `1px solid ${theme.palette.divider}`,
-  maxWidth: shrinked ? '720px' : '100%',
-  marginLeft: shrinked ? 'auto' : '0',
-  transition: 'all 0.3s ease',
   '& .MuiTableCell-root': {
     borderBottom: `1px solid ${theme.palette.divider}`,
     padding: '8px 12px',
@@ -141,7 +99,8 @@ const DriversTable = () => {
   const [filteredDrivers, setFilteredDrivers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [shrinked, setShrinked] = useState(false);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [selectedDriver, setSelectedDriver] = useState(null);
 
   useEffect(() => {
     fetchDrivers().then(res => {
@@ -163,8 +122,18 @@ const DriversTable = () => {
     }
   }, [searchTerm, drivers]);
 
+  const handleDriverUpdate = (updatedData) => {
+    setDrivers((prev) =>
+      prev.map((d) => (d.id === selectedDriver.id ? { ...d, ...updatedData } : d))
+    );
+    setFilteredDrivers((prev) =>
+      prev.map((d) => (d.id === selectedDriver.id ? { ...d, ...updatedData } : d))
+    );
+    setOpenDialog(false);
+  };
+
   const getStatusIcon = (status) => {
-    switch(status) {
+    switch (status) {
       case 'En Route': return <DirectionsCarIcon fontSize="small" sx={{ mr: 0.5 }} />;
       case 'Ready': return <CheckCircleIcon fontSize="small" sx={{ mr: 0.5 }} />;
       case 'Offline': return <PowerSettingsNewIcon fontSize="small" sx={{ mr: 0.5 }} />;
@@ -173,7 +142,7 @@ const DriversTable = () => {
   };
 
   const getStatusTooltip = (status) => {
-    switch(status) {
+    switch (status) {
       case 'En Route': return 'Driver is currently on a delivery';
       case 'Ready': return 'Driver is available for assignments';
       case 'Offline': return 'Driver is not currently available';
@@ -182,42 +151,26 @@ const DriversTable = () => {
   };
 
   return (
-    <StyledTableContainer shrinked={shrinked}>
+    <StyledTableContainer>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: '1rem' }}>
           Active Drivers
         </Typography>
-
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <SearchField
-            placeholder="Search drivers..."
-            variant="outlined"
-            size="small"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" />
-                </InputAdornment>
-              ),
-              sx: { width: '250px' }
-            }}
-          />
-
-          <Tooltip title={shrinked ? 'Expand Table Width' : 'Shrink Table Width'}>
-            <IconButton
-              onClick={() => setShrinked(prev => !prev)}
-              size="small"
-              sx={{
-                border: `1px solid ${theme.palette.divider}`,
-                ml: 1
-              }}
-            >
-              {shrinked ? <WidthFullIcon fontSize="small" /> : <ViewCompactIcon fontSize="small" />}
-            </IconButton>
-          </Tooltip>
-        </Box>
+        <SearchField
+          placeholder="Search drivers..."
+          variant="outlined"
+          size="small"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon fontSize="small" />
+              </InputAdornment>
+            ),
+            sx: { width: '250px' }
+          }}
+        />
       </Box>
 
       {loading ? (
@@ -272,8 +225,8 @@ const DriversTable = () => {
                     </Tooltip>
                   </TableCell>
                   <TableCell align="center">
-                    <Chip 
-                      label={driver.activeOrders} 
+                    <Chip
+                      label={driver.activeOrders}
                       color="primary"
                       variant="outlined"
                       size="small"
@@ -306,14 +259,18 @@ const DriversTable = () => {
                   </TableCell>
                   <TableCell align="right">
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                      <AssignButton 
-                        size="small" 
+                      <AssignButton
+                        size="small"
                         startIcon={<DirectionsCarIcon fontSize="small" />}
                       >
                         Assign
                       </AssignButton>
                       <IconButton
                         size="small"
+                        onClick={() => {
+                          setSelectedDriver(driver);
+                          setOpenDialog(true);
+                        }}
                         aria-label="settings"
                         sx={{
                           border: `1px solid ${theme.palette.divider}`,
@@ -340,6 +297,14 @@ const DriversTable = () => {
           </TableBody>
         </Table>
       )}
+
+      {/* ✅ Driver Update Dialog */}
+      <DriverUpdate
+        open={openDialog}
+        onClose={() => setOpenDialog(false)}
+        driver={selectedDriver}
+        onUpdate={handleDriverUpdate}
+      />
     </StyledTableContainer>
   );
 };

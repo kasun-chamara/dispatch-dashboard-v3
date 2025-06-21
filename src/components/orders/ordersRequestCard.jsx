@@ -16,32 +16,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import ablyClient from "../../ably/ablyClient";
 
-const driverData = [
-  {
-    id: 1,
-    name: "John Driver",
-    avatar: "JD",
-    rating: 4.8,
-    status: "available",
-  },
-  {
-    id: 2,
-    name: "Mike Wheeler",
-    avatar: "MW",
-    rating: 4.5,
-    status: "on delivery",
-  },
-  {
-    id: 3,
-    name: "Sarah Connor",
-    avatar: "SC",
-    rating: 4.9,
-    status: "available",
-  },
-  { id: 4, name: "Alex Morgan", avatar: "AM", rating: 4.7, status: "on break" },
-];
-
-const OrderCard = ({ order, isDark, onAssign }) => {
+const OrderCard = ({ order, isDark, onAssign, drivers }) => {
   const [selectedDriver, setSelectedDriver] = useState("");
   const [isAssigning, setIsAssigning] = useState(false);
   const [assigned, setAssigned] = useState(false);
@@ -57,7 +32,6 @@ const OrderCard = ({ order, isDark, onAssign }) => {
       setTimeout(() => setAssigned(false), 2000);
     }, 1500);
   };
-
 
   const orderData = order.text || order;
   const customer = orderData.customer || {};
@@ -399,7 +373,7 @@ const OrderCard = ({ order, isDark, onAssign }) => {
                 </span>
               );
             }
-            const driver = driverData.find((d) => d.name === selected);
+            const driver = drivers.find((d) => d.driverName === selected);
             return (
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <Avatar
@@ -410,7 +384,7 @@ const OrderCard = ({ order, isDark, onAssign }) => {
                     fontSize: 12,
                   }}
                 >
-                  {driver.avatar}
+                  {driver?.driverName?.charAt(0) || "D"}
                 </Avatar>
                 <span>{selected}</span>
               </div>
@@ -420,8 +394,13 @@ const OrderCard = ({ order, isDark, onAssign }) => {
           <MenuItem value="" disabled>
             <em>Select driver</em>
           </MenuItem>
-          {driverData.map((driver) => (
-            <MenuItem key={driver.id} value={driver.name} sx={{ fontSize: 13 }}>
+          {drivers.map((driver) => (
+            <MenuItem 
+              key={driver.driverId} 
+              value={driver.driverName} 
+              sx={{ fontSize: 13 }}
+              disabled={driver.status !== "AVAILABLE"}
+            >
               <div
                 style={{
                   display: "flex",
@@ -438,10 +417,10 @@ const OrderCard = ({ order, isDark, onAssign }) => {
                     fontSize: 12,
                   }}
                 >
-                  {driver.avatar}
+                  {driver.driverName?.charAt(0) || "D"}
                 </Avatar>
                 <div style={{ flex: 1 }}>
-                  <div>{driver.name}</div>
+                  <div>{driver.driverName}</div>
                   <div
                     style={{
                       fontSize: 11,
@@ -451,19 +430,22 @@ const OrderCard = ({ order, isDark, onAssign }) => {
                       gap: 4,
                     }}
                   >
-                    <span>⭐ {driver.rating}</span>
+                    <span>⭐ {driver.rating || "4.5"}</span>
                     <span>•</span>
                     <span
                       style={{
                         color:
-                          driver.status === "available"
+                          driver.status === "AVAILABLE"
                             ? "#28a745"
-                            : driver.status === "on delivery"
+                            : driver.status === "ON_DELIVERY"
                             ? "#fd7e14"
                             : "#6c757d",
                       }}
                     >
-                      {driver.status}
+                      {driver.status === "AVAILABLE" ? "Available" : 
+                       driver.status === "ON_DELIVERY" ? "On Delivery" : 
+                       driver.status === "ON_BREAK" ? "On Break" : 
+                       driver.status || "Unknown"}
                     </span>
                   </div>
                 </div>
@@ -547,11 +529,31 @@ const OrderRequestsCard = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
   const [orders, setOrders] = useState([]);
+  const [drivers, setDrivers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingDrivers, setLoadingDrivers] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    // 1. Fetch initial orders from REST API
+    // Fetch drivers from API
+    const fetchDrivers = async () => {
+      try {
+        const response = await fetch("http://13.41.192.8:3000/v1/drivers/rest2/list");
+        const data = await response.json();
+        if (data.data && Array.isArray(data.data)) {
+          setDrivers(data.data);
+        }
+        setLoadingDrivers(false);
+      } catch (error) {
+        console.error("Failed to fetch drivers:", error);
+        setLoadingDrivers(false);
+      }
+     
+    };
+
+    fetchDrivers();
+
+    // Fetch initial orders from REST API
     fetch(
       "http://13.41.192.8:3000/v1/orders/location/36726661/list?page=1&limit=10"
     )
@@ -566,15 +568,14 @@ const OrderRequestsCard = () => {
         console.error("Failed to fetch orders:", err);
         setLoading(false);
       });
-  const driverChannel = ablyClient.channels.get(`driver-36726661`);
+
+    const driverChannel = ablyClient.channels.get(`driver-36726661`);
     const logDriverMessage = (message) => {
       console.log('Driver channel message:', message);
     };
     driverChannel.subscribe(logDriverMessage);
 
-
-
-    // 2. Subscribe to Ably for real-time updates
+    // Subscribe to Ably for real-time updates
     const channel = ablyClient.channels.get("order-36726661");
     const updateOrders = (message) => {
       console.log("Ably message received:", message);
@@ -583,7 +584,6 @@ const OrderRequestsCard = () => {
         let order = message.data;
         console.log("Received order update:", order);
 
-       
         if (typeof order === "string") {
           try {
             order = JSON.parse(order); 
@@ -636,9 +636,10 @@ const OrderRequestsCard = () => {
       channel.unsubscribe(updateOrders);
     };
   }, []);
+
   const handleAssign = (orderId, driverName) => {
     console.log(`Order ${orderId} assigned to ${driverName}`);
-    
+    // Here you would typically make an API call to assign the driver
   };
 
   const filteredOrders = orders.filter((order) => {
@@ -651,7 +652,7 @@ const OrderRequestsCard = () => {
       customerName.toLowerCase().includes(searchTerm.toLowerCase())
     );
   });
-  console.log("Filtered orders:", filteredOrders);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -757,7 +758,7 @@ const OrderRequestsCard = () => {
             : "#007bff transparent",
         }}
       >
-        {loading ? (
+        {loading || loadingDrivers ? (
           <div
             style={{
               display: "flex",
@@ -773,7 +774,9 @@ const OrderRequestsCard = () => {
               thickness={4}
               sx={{ mb: 2, color: isDark ? "#3556a3" : "#007bff" }}
             />
-            <div style={{ fontSize: 14 }}>Loading orders...</div>
+            <div style={{ fontSize: 14 }}>
+              {loading ? "Loading orders..." : "Loading drivers..."}
+            </div>
           </div>
         ) : filteredOrders.length === 0 ? (
           <div
@@ -800,12 +803,13 @@ const OrderRequestsCard = () => {
           </div>
         ) : (
           <AnimatePresence>
-            {filteredOrders.map((orders, index) => (
+            {filteredOrders.map((order, index) => (
               <OrderCard
                 key={index}
-                order={orders}
+                order={order}
                 isDark={isDark}
                 onAssign={handleAssign}
+                drivers={drivers}
               />
             ))}
           </AnimatePresence>
